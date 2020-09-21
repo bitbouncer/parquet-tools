@@ -9,16 +9,24 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 RUN apt-get update && apt-get install -y sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git
-RUN apt-get update && apt-get install -y zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev liblz4-dev libzstd-dev libgoogle-glog-dev libgflags-dev \
-  libcurl4-openssl-dev libc-ares-dev liblzma-dev libxml2-dev libfmt-dev libpcre2-dev libhttp-parser-dev libjemalloc-dev libre2-dev libpq-dev libutf8proc-dev llvm-7 clang
 
+#boost deps
+RUN apt-get install -y libz-dev liblzma-dev libzstd-dev libbz2-dev
+
+#avro deps
+RUN apt-get install -y libsnappy-dev
+
+#aws deps
+RUN apt-get install -y  libssl-dev libcurl4-openssl-dev libgoogle-glog-dev
+
+#deps for arrow
+RUN  apt-get install -y liblz4-dev libutf8proc-dev libre2-dev llvm-7 clang
 
 ENV CPP_STANDARD="17"
 ENV AVRO_VER="release-1.9.2"
 ENV AWS_SDK_VER="1.7.220"
 ENV GRPC_VER="v1.32.0"
 ENV NLOHMANN_JSON_VER="3.7.1"
-#ENV PROTOBUF_VER="3.7.0"
 
 #deps for arrow
 ENV DOUBLE_CONVERSION_VER="v3.1.5"
@@ -33,6 +41,8 @@ ENV ARROW_VER="apache-arrow-1.0.1"
 RUN mkdir tmp && cd tmp
 
 
+ENV BOOST_B2_LIBS="--with-program_options --with-thread --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test"
+
 RUN wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
 mkdir -p boost && \
 tar \
@@ -42,12 +52,13 @@ tar \
   --strip-components 1 && \
 cd boost && \
 ./bootstrap.sh && \
-./b2 cxxstd=17 --with-thread --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test -j "$(getconf _NPROCESSORS_ONLN)" stage && \
-sudo ./b2 cxxstd=17 --with-thread --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test install && \
+./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS -j "$(getconf _NPROCESSORS_ONLN)" stage && \
+sudo ./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS install && \
 cd .. && \
 rm boost.tar.gz && \
 rm -rf boost
 
+#sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system snappy z bz2)' avro/lang/c++/CMakeLists.txt && \
 RUN wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz" && \
 mkdir -p avro && \
 tar \
@@ -56,12 +67,11 @@ tar \
   --directory avro \
   --strip-components 1 && \
 sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt && \
-sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' avro/lang/c++/CMakeLists.txt && \
 cat avro/lang/c++/CMakeLists.txt && \
 cd avro/lang/c++/  && \
 mkdir build && \
 cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../../../.. && \
@@ -74,31 +84,9 @@ mkdir -p build && cd build  && \
 cmake ..  && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd ../..
+cd ../.. && \
+rm -r grpc
 
-RUN git clone https://github.com/awslabs/aws-c-common && \
-cd aws-c-common && \
-mkdir build && cd build && \
-cmake ..  && \
-make -j "$(getconf _NPROCESSORS_ONLN)"  && \
-sudo make install  && \
-cd ../..
-
-RUN git clone https://github.com/awslabs/aws-checksums  && \
-cd aws-checksums && \
-mkdir build && cd build && \
-cmake -DCMAKE_PREFIX_PATH=/usr/local -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)"  && \
-sudo make install && \
-cd ../..
-
-RUN git clone https://github.com/awslabs/aws-c-event-stream  && \
-cd aws-c-event-stream && \
-mkdir build && cd build && \
-cmake -DCMAKE_PREFIX_PATH=/usr/local -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)"  && \
-sudo make install && \
-cd ../..
 
 RUN wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
 mkdir -p aws-sdk && \
@@ -108,9 +96,15 @@ tar \
   --directory aws-sdk \
   --strip-components 1  && \
 cd aws-sdk && \
-mkdir build && \
-cd build && \
+mkdir build-shared && \
+cd build-shared && \
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)"  && \
+sudo make install && \
+cd .. && \
+mkdir build-static && \
+cd build-static && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)"  && \
 sudo make install && \
 cd ../..
@@ -163,21 +157,6 @@ make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../.. && \
 rm flatbuffers.tar.gz
-
-#RUN wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
-#mkdir -p thrift && \
-#tar \
-#  --extract \
-#  --file thrift.tar.gz \
-#  --directory thrift \
-#  --strip-components 1 && \
-#cd thrift && \
-#./bootstrap.sh && \
-#./configure CXXFLAGS='-g -O2' --with-boost=/usr/local --without-nodejs --without-python --without-lua --without-go --without-java --enable-tests=no --enable-static=no && \
-#make -j 1 && \
-#sudo make install && \
-#cd .. && \
-#rm thrift.tar.gz
 
 RUN wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
 mkdir -p thrift && \
