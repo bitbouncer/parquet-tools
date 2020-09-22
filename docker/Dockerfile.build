@@ -8,10 +8,14 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-RUN apt-get update && apt-get install -y sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git
+RUN apt-get update && apt-get install -y sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git gcc-10 g++-10
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
 
 #boost deps
-RUN apt-get install -y libz-dev liblzma-dev libzstd-dev libbz2-dev
+#RUN apt-get install -y libz-dev liblzma-dev libzstd-dev libbz2-dev
+
+RUN apt-get install -y libboost-all-dev
 
 #avro deps
 RUN apt-get install -y libsnappy-dev
@@ -19,14 +23,15 @@ RUN apt-get install -y libsnappy-dev
 #aws deps
 RUN apt-get install -y  libssl-dev libcurl4-openssl-dev libgoogle-glog-dev
 
+RUN apt-get install -y 
 #deps for arrow
-RUN  apt-get install -y liblz4-dev libutf8proc-dev libre2-dev llvm-7 clang
+RUN  apt-get install -y liblz4-dev libutf8proc-dev libre2-dev llvm-7 clang libz-dev liblzma-dev libzstd-dev libbz2-dev
 
 ENV CPP_STANDARD="17"
-ENV AVRO_VER="release-1.9.2"
+ENV AVRO_VER="release-1.10.0"
 ENV AWS_SDK_VER="1.7.220"
 ENV GRPC_VER="v1.32.0"
-ENV NLOHMANN_JSON_VER="3.7.1"
+#ENV NLOHMANN_JSON_VER="3.7.1"
 
 #deps for arrow
 ENV DOUBLE_CONVERSION_VER="v3.1.5"
@@ -41,24 +46,25 @@ ENV ARROW_VER="apache-arrow-1.0.1"
 RUN mkdir tmp && cd tmp
 
 
-ENV BOOST_B2_LIBS="--with-program_options --with-thread --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test"
+#ENV BOOST_B2_LIBS="--with-program_options --with-thread --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test"
 
-RUN wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
-mkdir -p boost && \
-tar \
-  --extract \
-  --file boost.tar.gz \
-  --directory boost \
-  --strip-components 1 && \
-cd boost && \
-./bootstrap.sh && \
-./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS -j "$(getconf _NPROCESSORS_ONLN)" stage && \
-sudo ./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS install && \
-cd .. && \
-rm boost.tar.gz && \
-rm -rf boost
+#RUN wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
+#mkdir -p boost && \
+#tar \
+#  --extract \
+#  --file boost.tar.gz \
+#  --directory boost \
+#  --strip-components 1 && \
+#cd boost && \
+#./bootstrap.sh && \
+#./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS -j "$(getconf _NPROCESSORS_ONLN)" stage && \
+#sudo ./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS install && \
+#cd .. && \
+#rm boost.tar.gz && \
+#rm -rf boost
 
 #sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system snappy z bz2)' avro/lang/c++/CMakeLists.txt && \
+
 RUN wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz" && \
 mkdir -p avro && \
 tar \
@@ -175,21 +181,21 @@ rm thrift.tar.gz
 
 
 
-RUN wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
-mkdir -p nlomann && \
-tar \
-  --extract \
-  --file nlomann.tar.gz \
-  --directory nlomann \
-  --strip-components 1 && \
-cd nlomann && \
-mkdir build && cd build && \
-cmake .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../.. && \
-rm nlomann.tar.gz && \
-rm -rf nlomann
+#RUN wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
+#mkdir -p nlomann && \
+#tar \
+#  --extract \
+#  --file nlomann.tar.gz \
+#  --directory nlomann \
+#  --strip-components 1 && \
+#cd nlomann && \
+#mkdir build && cd build && \
+#cmake .. && \
+#make -j "$(getconf _NPROCESSORS_ONLN)" && \
+#sudo make install && \
+#cd ../.. && \
+#rm nlomann.tar.gz && \
+#rm -rf nlomann
 
 RUN wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_VER.tar.gz" && \
 mkdir -p rapidjson && \

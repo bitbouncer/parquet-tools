@@ -5,7 +5,7 @@ export CPP_STANDARD="17"
 export AVRO_VER="release-1.10.0"
 export AWS_SDK_VER="1.7.220"
 export GRPC_VER="v1.32.0"
-export NLOHMANN_JSON_VER="3.7.1"
+#export NLOHMANN_JSON_VER="3.7.1"
 
 #deps for arrow
 export DOUBLE_CONVERSION_VER="v3.1.5"
@@ -23,27 +23,21 @@ rm -rf tmp
 mkdir tmp
 cd tmp
 
-export BOOST_B2_LIBS="--with-program_options --with-thread --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test"
-wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
-mkdir -p boost && \
-tar \
-  --extract \
-  --file boost.tar.gz \
-  --directory boost \
-  --strip-components 1
-cd boost
-./bootstrap.sh
-./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS -j "$(getconf _NPROCESSORS_ONLN)" stage
-sudo ./b2 cxxstd=$CPP_STANDARD $BOOST_B2_LIBS install
-cd ..
+#export BOOST_B2_LIBS="--with-program_options --with-thread --with-iostreams --with-filesystem --with-regex --with-system --with-date_time --with-chrono --with-test"
+#wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
+#mkdir -p boost && \
+#tar \
+#  --extract \
+#  --file boost.tar.gz \
+#  --directory boost \
+#  --strip-components 1
+#cd boost
+#./bootstrap.sh
+#./b2 cxxstd=$CPP_STANDARD  $BOOST_B2_LIBS -j "$(getconf _NPROCESSORS_ONLN)" stage
+#sudo ./b2 cxxstd=$CPP_STANDARD $BOOST_B2_LIBS install
+#cd ..
 
-git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git
-cd grpc
-mkdir build && cd build
-cmake ..
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../..
+
 
 
 wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz"
@@ -64,22 +58,13 @@ make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../../../..
 
-
-#git clone https://github.com/awslabs/aws-checksums
-#cd aws-checksums
-#mkdir build && cd build
-#cmake -DCMAKE_PREFIX_PATH=/usr/local -DCMAKE_INSTALL_PREFIX=/usr/local ..
-#make -j "$(getconf _NPROCESSORS_ONLN)" 
-#sudo make install
-#cd ../..
-
-#git clone https://github.com/awslabs/aws-c-event-stream
-#cd aws-c-event-stream
-#mkdir build && cd build
-#cmake -DCMAKE_PREFIX_PATH=/usr/local -DCMAKE_INSTALL_PREFIX=/usr/local ..
-#make -j "$(getconf _NPROCESSORS_ONLN)" 
-#sudo make install
-#cd ../..
+git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git
+cd grpc
+mkdir build && cd build
+cmake ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../..
 
 wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
 mkdir -p aws-sdk && \
@@ -167,19 +152,19 @@ make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../..
 
-wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
-mkdir -p nlomann && \
-tar \
-  --extract \
-  --file nlomann.tar.gz \
-  --directory nlomann \
-  --strip-components 1 && \
-cd nlomann && \
-mkdir build && cd build
-cmake ..
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../..
+#wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
+#mkdir -p nlomann && \
+#tar \
+#  --extract \
+#  --file nlomann.tar.gz \
+#  --directory nlomann \
+#  --strip-components 1 && \
+#cd nlomann && \
+#mkdir build && cd build
+#cmake ..
+#make -j "$(getconf _NPROCESSORS_ONLN)" && \
+#sudo make install && \
+#cd ../..
 
 wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_VER.tar.gz" && \
 mkdir -p rapidjson && \
