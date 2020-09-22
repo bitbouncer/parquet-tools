@@ -2,7 +2,7 @@ set -ef
 
 export CPP_STANDARD="17"
 
-export AVRO_VER="release-1.9.2"
+export AVRO_VER="release-1.10.0"
 export AWS_SDK_VER="1.7.220"
 export GRPC_VER="v1.32.0"
 export NLOHMANN_JSON_VER="3.7.1"
