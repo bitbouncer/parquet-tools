@@ -53,8 +53,8 @@ struct Configuration {
   // optimization avoid deserializing unneeded columns.
   //std::vector<std::string> projected_columns = {"pickup_at", "dropoff_at", "total_amount"};
 
-  std::vector<std::string> projected_columns = {"RP_STORY_ID", "ENTITY_NAME" };
-  //std::vector<std::string> projected_columns = {};
+  //std::vector<std::string> projected_columns = {"RP_STORY_ID", "ENTITY_NAME" };
+  std::vector<std::string> projected_columns = {};
 
   // Indicates the filter by which rows will be filtered. This optimization can
   // make use of partition information and/or file metadata if possible.
